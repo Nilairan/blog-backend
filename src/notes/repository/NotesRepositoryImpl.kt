@@ -1,25 +1,42 @@
 package ru.nilairan.notes.repository
 
+import org.jetbrains.exposed.sql.transactions.transaction
+import ru.nilairan.notes.entity.NoteDAO
+import ru.nilairan.notes.entity.NoteEntity
 import ru.nilairan.notes.models.Note
-import ru.nilairan.user.models.UserInfo
-import java.time.LocalDateTime
-import kotlin.random.Random
+import ru.nilairan.user.repository.UserRepository
 
-class NotesRepositoryImpl : NotesRepository {
-
-    private val notesSet: MutableSet<Note> = mutableSetOf()
-
-    init {
-        notesSet.add(Note(Random.nextLong(), UserInfo(Random.nextLong(), "Test", "Testof"), "Title", "Message", LocalDateTime.now().toString()))
-        notesSet.add(Note(Random.nextLong(), UserInfo(Random.nextLong(), "Test", "Testof"), "Title2", "Message2", LocalDateTime.now().toString()))
-        notesSet.add(Note(Random.nextLong(), UserInfo(Random.nextLong(), "Test", "Testof"), "Title3", "Message3", LocalDateTime.now().toString()))
-    }
+class NotesRepositoryImpl(
+    private val userRepository: UserRepository
+) : NotesRepository {
 
     override fun getAllNotes(): Collection<Note> {
-        return notesSet
+        return transaction {
+            NoteEntity.all().toList().map { it.mapToNote(userRepository.getUserById(it.userId)?.mapToInfo()) }
+        }
     }
 
     override fun getNoteByUserId(userId: Long): Collection<Note> {
-        return notesSet.filter { it.userInfo.id == userId }
+        return transaction {
+            NoteEntity.find { NoteDAO.userId eq userId }.toList().map {
+                it.mapToNote(userRepository.getUserById(it.userId)?.mapToInfo())
+            }
+        }
+    }
+
+    override fun createNote(
+        userId: Long,
+        title: String,
+        message: String,
+        createAt: String
+    ) {
+        return transaction {
+            NoteEntity.new {
+                this.userId = userId
+                this.title = title
+                this.message = message
+                this.createAt = createAt
+            }
+        }
     }
 }

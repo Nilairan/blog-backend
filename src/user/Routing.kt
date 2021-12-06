@@ -8,7 +8,6 @@ import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 import org.koin.dsl.module
-import org.koin.ktor.ext.Koin
 import org.koin.ktor.ext.inject
 import ru.nilairan.API_SIGNATURE
 import ru.nilairan.JWT_LIVE_TIME
@@ -69,13 +68,15 @@ fun Routing.initUserController(audience: String, issuer: String, secret: String)
             val user = call.receive<LoginUserDTO>()
             if (user.email.isNullOrEmpty().not() && user.password.isNullOrEmpty().not()) {
                 if (userService.validateLoginUserData(user.email!!, user.password!!)) {
-                    val token = JWT.create()
-                        .withAudience(audience)
-                        .withIssuer(issuer)
-                        .withClaim(USERNAME_PRINCIPAL, user.email)
-                        .withExpiresAt(Date(System.currentTimeMillis() + JWT_LIVE_TIME))
-                        .sign(Algorithm.HMAC256(secret))
-                    call.respond(HttpStatusCode.OK, BaseResponse(TokenDTO(token)))
+                    userService.getUserByEmail(user.email)?.let { userInfo ->
+                        val token = JWT.create()
+                            .withAudience(audience)
+                            .withIssuer(issuer)
+                            .withClaim(USERNAME_PRINCIPAL, userInfo.id)
+                            .withExpiresAt(Date(System.currentTimeMillis() + JWT_LIVE_TIME))
+                            .sign(Algorithm.HMAC256(secret))
+                        call.respond(HttpStatusCode.OK, BaseResponse(TokenDTO(token)))
+                    }
                 } else {
                     call.respond(HttpStatusCode.BadRequest)
                 }

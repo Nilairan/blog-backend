@@ -2,7 +2,6 @@ package ru.nilairan.user.service.user
 
 import io.ktor.util.*
 import ru.nilairan.common.getMd5Digest
-import ru.nilairan.user.dto.LoginUserDTO
 import ru.nilairan.user.models.UserInfo
 import ru.nilairan.user.repository.UserRepository
 
@@ -22,5 +21,9 @@ class UserServiceImpl(
         return repository.getUserByEmail(email)?.let {
             it.email == email && it.password.decodeBase64Bytes().contentEquals(password.getMd5Digest())
         } ?: false
+    }
+
+    override fun getUserByEmail(email: String): UserInfo? {
+        return repository.getUserByEmail(email)?.mapToInfo()
     }
 }

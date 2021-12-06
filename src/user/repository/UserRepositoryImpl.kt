@@ -1,24 +1,41 @@
 package ru.nilairan.user.repository
 
+import org.jetbrains.exposed.sql.transactions.transaction
+import ru.nilairan.user.entity.UserEntity
+import ru.nilairan.user.entity.UsersDAO
 import ru.nilairan.user.models.User
-import ru.nilairan.user.models.UserInfo
 
 class UserRepositoryImpl : UserRepository {
-    private val usersSet: MutableSet<User> = mutableSetOf()
 
-    override fun registerUser(user: User) {
-        usersSet.add(user)
+    override fun registerUser(
+        email: String,
+        password: String,
+        firstname: String,
+        lastname: String
+    ) {
+        transaction {
+            UserEntity.new {
+                this.email = email
+                this.password = password
+                this.firstname = firstname
+                this.lastname = lastname
+            }
+        }
     }
 
     override fun getUserById(id: Long): User? {
-        return usersSet.find { it.id == id }
+        return transaction {
+            UserEntity.findById(id)?.toUser()
+        }
     }
 
     override fun getUserByEmail(email: String): User? {
-        return usersSet.find { it.email == email }
+        return transaction {
+            UserEntity.find { UsersDAO.email eq email }.firstOrNull()?.toUser()
+        }
     }
 
     override fun getAllUsers(): Collection<User> {
-        return usersSet
+        return transaction { UserEntity.all().toList().map { it.toUser() } }
     }
 }

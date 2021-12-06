@@ -8,9 +8,10 @@ import io.ktor.auth.*
 import io.ktor.auth.jwt.*
 import io.ktor.features.*
 import io.ktor.jackson.*
+import org.jetbrains.exposed.sql.Database
 import org.koin.ktor.ext.Koin
-import ru.nilairan.notes.notesAppModule
 import ru.nilairan.notes.initNotesBlogModule
+import ru.nilairan.notes.notesAppModule
 import ru.nilairan.user.initUserModule
 import ru.nilairan.user.userAppModule
 import java.text.DateFormat
@@ -25,7 +26,7 @@ fun Application.module(testing: Boolean = false) {
     val issuer = environment.config.property("jwt.issuer").getString()
     val audience = environment.config.property("jwt.audience").getString()
     val myRealm = environment.config.property("jwt.realm").getString()
-
+    initDB()
     install(DefaultHeaders)
     install(CallLogging)
     install(Authentication) {
@@ -60,8 +61,17 @@ fun Application.module(testing: Boolean = false) {
     initUserModule(audience, issuer, secret)
 }
 
+fun initDB() {
+    Database.connect(
+        url = "jdbc:postgresql://localhost:5432/blog",
+        driver = "org.postgresql.Driver",
+        user = "ivankholodov",
+        password = "dqqb8n9y",
+    )
+}
+
 const val API_VERSION = 1
 const val API_SIGNATURE = "api/v$API_VERSION"
 const val JWT_NAME = "auth-jwt"
 const val JWT_LIVE_TIME = 3600000
-const val USERNAME_PRINCIPAL = "email"
+const val USERNAME_PRINCIPAL = "ID"

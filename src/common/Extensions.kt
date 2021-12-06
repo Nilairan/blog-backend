@@ -9,7 +9,7 @@ import java.security.MessageDigest
 
 fun String.getMd5Digest(): ByteArray = MessageDigest.getInstance("MD5").digest(this.toByteArray())
 
-fun PipelineContext<*, ApplicationCall>.getEmailByPrincipal(): String {
+fun PipelineContext<*, ApplicationCall>.getUserIdByPrincipal(): Long {
     val principal = call.principal<JWTPrincipal>()
-    return principal!!.payload.getClaim(USERNAME_PRINCIPAL).asString()
+    return principal!!.payload.getClaim(USERNAME_PRINCIPAL).asLong()
 }

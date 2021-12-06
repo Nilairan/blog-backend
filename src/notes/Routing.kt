@@ -3,6 +3,7 @@ package ru.nilairan.notes
 import io.ktor.application.*
 import io.ktor.auth.*
 import io.ktor.http.*
+import io.ktor.request.*
 import io.ktor.response.*
 import io.ktor.routing.*
 
@@ -11,7 +12,8 @@ import org.koin.ktor.ext.inject
 import ru.nilairan.API_SIGNATURE
 import ru.nilairan.JWT_NAME
 import ru.nilairan.common.BaseResponse
-import ru.nilairan.common.getEmailByPrincipal
+import ru.nilairan.common.getUserIdByPrincipal
+import ru.nilairan.notes.dto.CreateNoteDTO
 import ru.nilairan.notes.repository.NotesRepository
 import ru.nilairan.notes.repository.NotesRepositoryImpl
 import ru.nilairan.notes.service.NotesService
@@ -35,23 +37,29 @@ fun Routing.initNotesController() {
         authenticate(JWT_NAME) {
             get("my") {
                 try {
-                    val email = getEmailByPrincipal()
-                    call.respond(HttpStatusCode.OK, BaseResponse(service.getNotesByEmail(email)))
+                    call.respond(HttpStatusCode.OK, BaseResponse(service.getNotesByUserId(getUserIdByPrincipal())))
                 } catch (e: Exception) {
                     e.printStackTrace()
                     call.respond(HttpStatusCode.InternalServerError)
                 }
             }
             post("create") {
-
+                try {
+                    val createNoteDTO = call.receive<CreateNoteDTO>()
+                    service.createNote(createNoteDTO, getUserIdByPrincipal())
+                    call.respond(HttpStatusCode.OK)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    call.respond(HttpStatusCode.InternalServerError)
+                }
             }
         }
     }
 }
 
 val notesAppModule = module {
-    single<NotesService> { NotesServiceImpl(get(), get()) }
-    single<NotesRepository> { NotesRepositoryImpl() }
+    single<NotesService> { NotesServiceImpl(get()) }
+    single<NotesRepository> { NotesRepositoryImpl(get()) }
 }
 
 const val NOTES_ROUTE = "notes"
